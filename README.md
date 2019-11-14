@@ -3,7 +3,7 @@ Based on CRUD operations, this is a READ-only API with Basic authentication. It 
 
 This is a _v2_ of my code. It was first designed to integrate AppGini with Microsoft's Power BI. A _v3_, with all CRUD operations (and custom operations) is coming soon.
 
-# How does it work?
+## How does it work?
 On startup, the API class:
 - Includes the ```lib.php``` file of AppGini on startup, so it can use the AppGini functions.
 - Fetches the tables and columns of the application from ```INFORMATION_SCHEMA```, so it's always up to date with your application.
