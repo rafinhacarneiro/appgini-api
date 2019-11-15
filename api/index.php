@@ -1,33 +1,32 @@
 <?php
 
-    // Define a página como um JSON UTF-8
+    // Defines the JSON UTF-8 response format
     header("Content-Type: application/json;charset=utf-8");
 
-    // Classe da API
     class api{
 
-        // PROPRIEDADES
-        // Recebe os dados do Request
+        /* -------- PROPERTIES -------- */
+        
+        // Admin user data
         private $tokens = array();
+        // Request data
         private $request = array();
 
-        // Tabelas possíveis de pesquisa
+        // Database mirror
         private $base = array();
 
-        // Resposta da aplicação
+        // API response
         public $report = array();
         public $meta = array();
 
-        // MÉTODOS
-        //
-        // Cria os usuários e tokens para a resposta
+        /* -------- METHODS -------- */
+        
         function __construct(){
 
-            // Ligação com o Organizer
-            $dir = dirname(__FILE__)."/..";
-            include "$dir/../lib.php";
+            // AppGini integration
+            include dirname(__FILE__)."/../lib.php";
 
-            // Resgata os usuários que podem realizar consultas com a API
+            // Fetches the Admins' info
             $sql = "SELECT memberID, passMD5
                     FROM membership_users
                     WHERE groupID = 2";
@@ -45,7 +44,7 @@
 
             $this -> tokens = $users;
 
-            // Resgata as tabelas possíveis de consulta e suas colunas
+            // Fetches an app's database mirror
             $sql = "SELECT
                         t.TABLE_NAME AS tbl,
                         GROUP_CONCAT(DISTINCT REPLACE(c.COLUMN_NAME, '?=', '') SEPARATOR '|') AS cols
@@ -68,30 +67,31 @@
 
             $this -> base = $tables;
 
-            // Informa os meta dados da consulta
+            // Sets meta data to the response
             $this -> meta = array(
                 "ip" => $_SERVER['REMOTE_ADDR'],
                 "timestamp" => date("Y-m-d H:i:s"),
             );
         }
 
+        // Prints the JSON reponse
         function __destruct(){
-            unset($this -> base);
-            unset($this -> request);
-
             echo json_encode($this, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_NUMERIC_CHECK);
         }
 
-        // Valida se o usuário pode usar esta API
+        // Validates the user's authentication
         function validateCredential($token){
             $user = strtolower(trim($token["user"]));
             $pass = $token["pass"];
 
+            // Checks if the given username is valid
             $userExists = array_key_exists($user, $this -> tokens);
             $correctCredentials = false;
 
+            // Checks if the given password matches the user's password
             if($userExists) $correctCredentials = (password_verify($pass, $this -> tokens[$user]) || $this -> tokens[$user] == md5($pass));
 
+            // Unsets the Admins' info
             unset($this -> tokens);
 
             if($userExists && $correctCredentials) return true;
@@ -100,30 +100,33 @@
             return false;
         }
 
-        // Recebe o request
+        // Recieves the request data
         function getRequest($request){
 
+            // Checks if the parameter is set but empty
             if(isset($request["tb"]) && empty($request["tb"])){
                 $this -> setError("table-null");
                 return false;
             }
 
+            // If the parameter is not set, defines "all", so it can search for the database mirror
             if(!isset($request["tb"])){
                 $request["tb"] = "all";
             }
 
-            // Parâmetros que podem ser arrays
+            // This parameters can be an array of values
             $params = array("search", "orderBy", "orderDir");
 
             foreach($params as $param){
                 if(isset($request[$param])){
+                    // Turns GET data into an array
                     if($_SERVER["REQUEST_METHOD"] == "GET"){
                         $request[$param] =  (substr_count($request[$param], " ") ?
                                                 explode(" ", $request[$param]) :
                                                 explode("+", $request[$param])
                                             );
                     }
-
+                    // Turns POST data single values into an array
                     if(!is_array($request[$param])) $request[$param] = array($request[$param]);
                 }
             }
@@ -132,44 +135,44 @@
             return true;
         }
 
-        // Define a resposta como erro
+        // Error reporting method
         function setError($type){
 
             $errors = [
-                "login-failed" => "Autenticação falhou. Corrija os dados e tente novamente.",
-                "table-failed" => "Esta tabela não existe.",
-                "table-null" => "Nenhuma tabela para consulta foi informada.",
-                "reg-null" => "Não existem registros para exibir nesta consulta.",
-                "reg-failed" => "Parâmetros de consulta incorretos",
-                "order-failed" => "Campo de ordenação incorreto.",
-                "orderDir-failed" => "Direção de ordenação incorreta.",
-                "orderCount-failed" => "A quantidade de direções de ordenação e de campos para ordenação deve ser a mesma.",
-                "orderExists-failed" => "A quantidade de direções de ordenação e de campos para ordenação deve ser a mesma.",
-                "limit-failed" => "Limitição de dados não permitida.",
-                "page-failed" => "Valor para página não permitido.",
-                "id-failed" => "Valor não permitido para ID.",
-                "where-failed" => "Operação de busca não permitida.",
-                "field-failed" => "Campo não existente."
+                "login-failed" => "Authentication failed",
+                "table-failed" => "Nonexistent table",
+                "table-null" => "Table not informed",
+                "reg-null" => "There's no returned data to this query",
+                "reg-failed" => "Incorrect query parameters",
+                "order-failed" => "Incorrect Order field",
+                "orderDir-failed" => "Incorrect Order direction",
+                "orderCount-failed" => "The quantity of fields to order and order directions should be the same for 2 fields or more",
+                "orderExists-failed" => "The quantity of fields to order and order directions should be the same for 2 fields or more",
+                "limit-failed" => "Limit value prohibited",
+                "page-failed" => "Page value prohibited",
+                "id-failed" => "ID value prohibited",
+                "where-failed" => "Search operator prohibited",
+                "field-failed" => "Nonexistent field"
             ];
 
-            $this -> report = $errors[$type];
+            $this -> report = array("error" => array($type => $errors[$type]));
         }
 
-        // Retorna se a tabela é válida
+        // Checks if the informed table is valid
         function validTable(){
             return array_key_exists(strtolower(trim($this -> request["tb"])), $this -> base);
         }
 
-        // Retorna se o campo designado existe na tabela
+        // Checks if the informed table's field is valid
         function validField($field){
             $table = $this -> request["tb"];
 
             return (in_array(strtolower(trim($field)), $this -> base[$table]) ? true : false);
         }
 
-        // Realiza a pesquisa e retorna a resposta
         function query(){
-            // Verifica se a consulta tem uma tabela foco
+            
+            // Checks if the table value is set
             if($this -> validTable()){
                 $table = strtolower(trim($this -> request["tb"]));
 
@@ -181,6 +184,7 @@
 
                 $sql = "SELECT {$sqlFields} FROM {$sqlFrom}";
 
+                // Checks if a single row is requested
                 if(isset($this -> request["id"])){
 
                     $id = intval($this -> request["id"]);
@@ -190,10 +194,11 @@
                         return;
                     }
 
-                    $sqlWhere = " AND {$table}.{$pkField} = '{$id}'";
+                    $sqlWhere = " WHERE {$table}.{$pkField} = '{$id}'";
 
                     $sql .= $sqlWhere;
-
+                
+                // If false, creates a query
                 } else {
 
                     $limit = 30;
@@ -204,6 +209,7 @@
                     $sqlOrderDir = (substr_count($table, "membership") ? "" : " DESC");
                     $sqlLimit = " LIMIT {$limit} OFFSET ";
 
+                    // Validates and adds the searched info to the query
                     if(isset($this -> request["search"])){
 
                         $sqlWhere = " WHERE";
@@ -262,7 +268,7 @@
                         }
                     }
 
-                    // Verifica a se existe pedido de ordenação por campo
+                    // Validates and adds an ordenation to the query
                     if(isset($this -> request["orderBy"])) {
 
                         foreach($this -> request["orderBy"] as $i => $orderBy){
@@ -275,19 +281,19 @@
                         }
                     }
 
-                    // Verifica a se existe pedido de direção de ordenação
+                    // Validates and adds an ordenation direction to the query
                     if(isset($this -> request["orderDir"])){
 
                         $countOrderDir = count($this -> request["orderDir"]);
                         $orderByExists = isset($this -> request["orderBy"]);
 
-                        // Verifica se existem mais direções de ordenação do que campos para ordenar
+                        // Checks if there is more than 1 ordenation direction but no ordenation fields
                         if(!$orderByExists && $countOrderDir > 1){
                             $this -> setError("orderExists-failed");
                             return;
                         }
 
-                        // Verifica se as ordenações podem ser aceitas
+                        // Checks if there the ordernation direction are asc/desc only
                         foreach($this -> request["orderDir"] as $orderDir){
                             $orderDir = strtolower(trim($orderDir));
 
@@ -297,17 +303,15 @@
                             }
                         }
 
-                        // Se existe somente direção de ordenação
                         if($countOrderDir == 1){
                             $sqlOrderDir = $this -> request["orderDir"][0];
 
-                            // Se existem campos para ordenação
                             if($orderByExists) $sqlOrderBy = " ORDER BY ". implode(", ", $this -> request["orderBy"]);
 
-                        // Senão
                         } else {
                             $countOrderBy = count($this -> request["orderBy"]);
 
+                            // Checks if the quantity of ordenation fields and ordenation directions are the same
                             if($countOrderBy != $countOrderDir){
                                 $this -> setError("orderCount-failed");
                                 return;
@@ -324,7 +328,7 @@
 
                     $sqlOrderBy .= " ". $sqlOrderDir;
 
-                    // Verifica a se existe pedido de uma página específica
+                    // Checks if an especific page was requested
                     if(isset($this -> request["page"])){
                         $page = intval($this -> request["page"]);
 
@@ -336,21 +340,21 @@
                         $offset = $page;
                     }
 
-                    // Verifica a se existe pedido de limitação/paginação
+                    // Checks if limit of rows was altered
                     if(isset($this -> request["limit"])) {
 
                         $limit = intval($this -> request["limit"]);
 
-                        // Se for requisitado um limite numérico
+                        // If the limit value is numeric, changes the limit value
                         if($limit){
                             $offset = $limit * ($offset - 1);
 
                             $sqlLimit = " LIMIT {$limit} OFFSET {$offset}";
 
-                        // Se forem requisitados todos os dados
+                        // If it's not numeric, but it's value is "all", remove limitation from the query
                         } else if(strtolower(trim($this -> request["limit"])) == "all"){
                             $sqlLimit = "";
-                        // Senão, retorna um erro
+                        // Else, returns an error
                         } else{
                             $this -> setError("limit-failed");
                             return;
@@ -364,6 +368,7 @@
                     $sql .= $sqlWhere . $sqlOrderBy . $sqlLimit;
                 }
 
+                // Try to do the query
                 try {
                     $query = sql($sql, $eo);
                     $regs = array();
@@ -379,14 +384,16 @@
 
                     $this -> report = $regs;
 
+                    // If there's no return data, informs an error
                     if(!$hasRegs) $this -> setError("reg-null");
-                } catch(Throwable $t) {
+                // Catch possible query errors
+                } catch(Throwable $t) { // PHP 7
                     $this -> setError("reg-failed");
-                } catch(Exception $e){
+                } catch(Exception $e){  // PHP 5.6
                     $this -> setError("reg-failed");
                 }
 
-            // Senão, verifica se foi pedido as tabelas disponíveis
+            // Checks if the database mirror were requested
             } else if(strtolower(trim($this -> request["tb"])) == "all") {
 
                 $base = $this -> base;
@@ -397,14 +404,16 @@
 
                 $this -> report = $resp;
 
-            // Senão, retorna um erro
+            // The table does not exists in the database
             } else {
                 $this -> setError("table-failed");
             }
         }
     }
 
-    // Resgate dos dados de autenticação
+    /* ---------- API Usage ---------- */
+
+    // User informed values for username and password
     $token = [
         "user" => "",
         "pass" => ""
@@ -413,17 +422,21 @@
     if(array_key_exists("PHP_AUTH_USER", $_SERVER)) $token["user"] = $_SERVER["PHP_AUTH_USER"];
     if(array_key_exists("PHP_AUTH_PW", $_SERVER)) $token["pass"] = $_SERVER["PHP_AUTH_PW"];
 
-    // Início da API
-    // Valida se o dados de auth. estão corretos
-    $api = new api($token);
+    // Initiates the API
+    $api = new api();
 
+    // If the token was validated, continue.
+    // Else, returns and error
     if($api -> validateCredential($token)){
-        // Se sim, realiza o request
-        // Senão, exibe o erro
+        $data = ($_SERVER["REQUEST_METHOD"] == "GET" ?                      // Was it a GET request?
+                    $_GET :                                                 // If true, use the $_GET array
+                    json_decode(file_get_contents('php://input'), true)     // Else, use the JSON from POST
+                );
 
-        $data = ($_SERVER["REQUEST_METHOD"] == "GET" ? $_GET : json_decode(file_get_contents('php://input'), true));
-
+        // Checks if the request has errors
         if($api -> getRequest($data)){
+            // If true, do the query
+            // Else, informs an error
             $api -> query();
         }
     }
