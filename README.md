@@ -1,7 +1,7 @@
 # AppGini API
-Based on CRUD operations, this is a READ-only API with Basic authentication. It uses most of AppGini functions and works with any AppGini's generated applications. It provides ```GET``` and ```POST``` support and all responses are in JSON format. Only Admin users can use this API.
+This is an API based on CRUD operations with Basic authentication. It uses most of AppGini functions and works with any AppGini's generated applications. It provides ```GET```, ```POST```, ```PUT```, ```PATCH``` and ```DELETE``` support and all responses are in JSON format. Only Admin users can use this API.
 
-This is a _v2_ of my code. It was first designed to integrate AppGini with Microsoft's Power BI. A _v3_, with all CRUD operations (and custom operations) is coming soon.
+The _v2_ was first designed to integrate AppGini with Microsoft's Power BI, so its function is READ-only with ```GET```/```POST``` suport. The _v3_ its a full CRUD API. Custom operations are coming soon.
 
 ## How does it work?
 On startup, the API class:
@@ -13,13 +13,29 @@ On startup, the API class:
 - Returns data in JSON format.
 
 ## Installation
-1) Put the ```api/index.php``` your app's root folder
+1) Put the ```api``` folder on your app's root folder
 2) Enjoy your API :)
 
 ## Basic usage
+
+### v2
 Both ```GET``` and ```POST``` use the same endpoints.
 
 - ```GET```: /api/index.php?tb=your-db-table
 - ```POST```: {tb="your-db-table"}
 
 More examples on the wiki.
+
+### v3
+
+- ```GET```: /api/index.php?read=your-db-table
+- ```POST```:
+```json
+{
+  "create": "your-db-table",
+  "info": {
+    "field": "value",
+    ...
+  }
+}
+```
