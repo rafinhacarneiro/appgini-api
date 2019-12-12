@@ -28,7 +28,7 @@
             $base = $this -> base;
 
             $resp = [
-                "tabelas" => $this -> base
+                "database" => $this -> base
             ];
 
             $this -> report = $resp;

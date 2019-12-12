@@ -53,13 +53,13 @@
 
             $query = sql($sql, $eo);
 
-            $tabelas = array();
+            $tables = array();
 
             while($res = db_fetch_assoc($query)){
-                $tabelas[$res["tbls"]] = explode("|", $res["cols"]);
+                $tables[$res["tbls"]] = explode("|", $res["cols"]);
             }
 
-            $this -> base = $tabelas;
+            $this -> base = $tables;
         }
 
         // Returns data involved in simple quotation marks
