@@ -22,7 +22,12 @@ On startup, the API class:
 Both ```GET``` and ```POST``` use the same endpoints.
 
 - ```GET```: /api/index.php?tb=your-db-table
-- ```POST```: {tb="your-db-table"}
+- ```POST```:
+```json
+{
+  "tb": "your-db-table"
+}
+```
 
 More examples on the wiki.
 
@@ -37,5 +42,23 @@ More examples on the wiki.
     "field": "value",
     ...
   }
+}
+```
+- ```PUT``` / ```PATCH```:
+```json
+{
+  "update": "your-db-table",
+  "id": 123
+  "info": {
+    "field": "value",
+    ...
+  }
+}
+```
+- ```DELETE```:
+```json
+{
+  "delete": "your-db-table",
+  "id": 123
 }
 ```
