@@ -21,7 +21,7 @@ On startup, the API class:
 ### v2
 Both ```GET``` and ```POST``` use the same endpoints.
 
-- ```GET```: /api/index.php?tb=your-db-table
+- ```GET```: /api/v2/index.php?tb=your-db-table
 - ```POST```:
 ```json
 {
@@ -33,7 +33,7 @@ More examples on the wiki.
 
 ### v3
 
-- ```GET```: /api/index.php?read=your-db-table
+- ```GET```: /api/v3/index.php?read=your-db-table
 - ```POST```:
 ```json
 {
