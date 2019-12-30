@@ -48,7 +48,7 @@
         public function DELETE(){
 
             // If the informed ID doesn't exists, informs an error
-            if(!$this -> exists()){
+            if(!$this -> exists(2)){
                 $this -> setError("reg-inexistent");
                 return false;
             }
@@ -70,7 +70,7 @@
                 
                 sql($sql, $eo);
 
-                $deleted = (!$this -> exists());
+                $deleted = (!$this -> exists(2));
 
                 // If still exists, informs an error
                 if(!$deleted){
@@ -93,21 +93,7 @@
                 return false;
             }
         }
-
-        // Checks if the informed ID exists on informed table
-        // @return: 0 (false) or 1 (true)
-        private function exists(){
-
-            $table = strtolower(trim($this -> request["delete"]));
-            $id = $this -> sqlMap($this -> request["id"]);
-
-            $pkField = getPKFieldName($table);
-            
-            $sql = "SELECT COUNT({$pkField}) FROM {$table} WHERE {$pkField} = {$id}";
-            
-            return intval(sqlValue($sql));
-
-        }
+        
     }
 
 ?>
