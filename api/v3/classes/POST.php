@@ -56,7 +56,7 @@
             $table = strtolower(trim($this -> request["create"]));
 
             // If the informed data already exists, informs the ID of the row
-            $exists = $this -> exists();
+            $exists = $this -> read(3);
             if($exists){
                 $this -> report = [
                     "success" => true,
@@ -80,7 +80,7 @@
 
                 sql($sql, $eo);
 
-                $created = $this -> exists();
+                $created = $this -> read(3);
 
                 if(!$created){
                     $this -> setError("reg-null");
@@ -104,23 +104,7 @@
                 return false;
             }
         }
-
-        // Checks if the informed data exists on informed table
-        // @return: 0 (false) or numeric ID from the table (true)
-        private function exists(){
-            $table = strtolower(trim($this -> request["create"]));
-            $comb = array();
-            
-            foreach($this -> request["info"] as $field => $value){
-                $comb[] = "{$field} = ". $this -> sqlMap($value);
-            }
-
-            $pkField = getPKFieldName($table);
-            
-            $sql = "SELECT {$pkField} FROM {$table} WHERE ". implode(" AND ", $comb);
-            
-            return intval(sqlValue($sql));
-        }
+        
     }
 
 ?>
