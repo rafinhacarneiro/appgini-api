@@ -115,37 +115,7 @@
                 return false;
             }
         }
-
-        // Checks if the informed ID exists on informed table
-        // @return: 0 (false) or 1 (true)
-        private function exists(){
-
-            $table = strtolower(trim($this -> request["update"]));
-            $id = $this -> sqlMap($this -> request["id"]);
-
-            $pkField = getPKFieldName($table);
-            
-            $sql = "SELECT COUNT({$pkField}) FROM {$table} WHERE {$pkField} = {$id}";
-            
-            return intval(sqlValue($sql));
-        }
-
-        // Checks if the informed ID exists on informed table
-        // @return: 0 (false) or numeric ID from the table (true)
-        private function read(){
-            $table = strtolower(trim($this -> request["update"]));
-            $comb = array();
-            
-            foreach($this -> request["info"] as $field => $value){
-                $comb[] = "{$field} = ". $this -> sqlMap($value);
-            }
-
-            $pkField = getPKFieldName($table);
-            
-            $sql = "SELECT {$pkField} FROM {$table} WHERE ". implode(" AND ", $comb);
-            
-            return intval(sqlValue($sql));
-        }
+        
     }
 
 ?>
