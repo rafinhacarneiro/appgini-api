@@ -45,7 +45,7 @@
         
         $api = new $class($dbDatabase);
     
-        if(@$api -> getRequest($data) || $tables) $api -> $requestMethod();
+        if(@$api -> getRequest($data)) $api -> $requestMethod();
     
         if($api) echo $api -> toJson();
     }
