@@ -25,8 +25,6 @@
         // Returns the database model
         public function Tables(){
 
-            $base = $this -> base;
-
             $resp = [
                 "database" => $this -> base
             ];
