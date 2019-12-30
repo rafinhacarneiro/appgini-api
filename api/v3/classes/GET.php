@@ -237,7 +237,7 @@
                 $field = makeSafe(trim(strtolower($field)));
 
                 // If the field isn't valid, informs an error
-                if(!$this -> validField($field)){
+                if(!$this -> validField($table, $field)){
                     $this -> setError("field-failed");
                     return false;
                 }
