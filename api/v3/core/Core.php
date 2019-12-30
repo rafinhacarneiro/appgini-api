@@ -119,6 +119,65 @@
 
             $this -> report = array("error" => $errors[$type], "type" => $type);
         }
+        
+        // Checks if the row already exists.
+        // @params  $type  Integer  The CRUD operation
+        // @return  true if exists, false if not.
+        protected function exists($type = 1){
+
+            $requestMode = [
+                1 => "update",
+                2 => "delete",
+                3 => "create"
+            ];
+
+            $table = strtolower(trim($this -> request[$requestMode[$type]]));
+            $pkField = getPKFieldName($table);
+
+            $sql = "SELECT COUNT({$pkField}) FROM {$table}";
+
+            if($type != 3){
+                $id = $this -> sqlMap($this -> request["id"]);
+
+                $sql .= " WHERE {$pkField} = {$id}";
+            } else{
+                $search = array();
+
+                foreach($this -> request["info"] as $field => $value){
+                    $search[] = "{$field} = ".$this -> sqlMap($value);
+                }
+
+                $sql .= " WHERE ".implode(" AND ", $search);
+            }
+
+            $sql .= " ORDER BY {$pkField} ASC LIMIT 1";
+
+            return intval(sqlValue($sql));
+        }
+        
+        // Returns the ID of one row
+        // @params  $type  Integer  The CRUD operation
+        // @return  numeric ID if exists, 0 (false) if not.
+        protected function read($type = 1){
+            $requestMode = [
+                1 => "update",
+                2 => "delete",
+                3 => "create"
+            ];
+
+            $table = strtolower(trim($this -> request[$requestMode[$type]]));
+            $comb = array();
+            
+            foreach($this -> request["info"] as $field => $value){
+                $comb[] = "{$field} = ". $this -> sqlMap($value);
+            }
+
+            $pkField = getPKFieldName($table);
+            
+            $sql = "SELECT {$pkField} FROM {$table} WHERE ". implode(" AND ", $comb) ." ORDER BY {$pkField} ASC LIMIT 1";
+
+            return intval(sqlValue($sql));
+        }
 
         // Returns if the informed table exists on the database model
         // @params  $table  String  A possible table.
