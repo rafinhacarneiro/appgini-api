@@ -62,6 +62,8 @@
             $tables = array();
 
             while($res = db_fetch_assoc($query)){
+                $res = array_map("mb_strtolower", $res);
+
                 $tables[$res["tbl"]] = explode("|", $res["cols"]);
             }
 
@@ -102,7 +104,6 @@
 
         // Recieves the request data
         function getRequest($request){
-
             // Checks if the parameter is set but empty
             if(isset($request["tb"]) && empty($request["tb"])){
                 $this -> setError("table-null");
@@ -113,6 +114,8 @@
             if(!isset($request["tb"])){
                 $request["tb"] = "all";
             }
+
+            $request["tb"] = trim(mb_strtolower($request["tb"]));
 
             // This parameters can be an array of values
             $params = array("search", "orderBy", "orderDir");
@@ -128,6 +131,8 @@
                     }
                     // Turns POST data single values into an array
                     if(!is_array($request[$param])) $request[$param] = array($request[$param]);
+
+                    $request[$param] = array_map("mb_strtolower", $request[$param]);
                 }
             }
 
@@ -160,14 +165,15 @@
 
         // Checks if the informed table is valid
         function validTable(){
-            return array_key_exists(strtolower(trim($this -> request["tb"])), $this -> base);
+            return array_key_exists($this -> request["tb"], $this -> base);
         }
 
         // Checks if the informed table's field is valid
         function validField($field){
             $table = $this -> request["tb"];
+            $field = strtolower(trim($field));
 
-            return (in_array(strtolower(trim($field)), $this -> base[$table]) ? true : false);
+            return in_array($field, $this -> base[$table]);
         }
 
         function query(){
