@@ -56,6 +56,8 @@
             $tables = array();
 
             while($res = db_fetch_assoc($query)){
+                $res = array_map("mb_strtolower", $res);
+                
                 $tables[$res["tbls"]] = explode("|", $res["cols"]);
             }
 
@@ -192,6 +194,7 @@
         // @params  $field  String  A possible field.
         // @return  true if exists, false if not.
         public function validField(String $table, String $field){
+            $table = strtolower(trim($table));
             $field = strtolower(trim($field));
             return in_array($field, $this -> base[$table]);
         }

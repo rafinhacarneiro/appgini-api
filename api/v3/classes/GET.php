@@ -26,6 +26,7 @@
             }
 
             if(!isset($request["read"])) $request["read"] = "all";
+            $request["read"] = trim(mb_strtolower($request["read"]));
 
             // Parameters that can be an array
             $params = array("search", "orderBy", "orderDir");
@@ -38,6 +39,8 @@
                                                 explode("+", $request[$param])
                                             );
                     }
+
+                    $request[$param] = array_map("mb_strtolower", $request[$param]);
                 }
             }
 

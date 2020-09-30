@@ -16,8 +16,66 @@
     header("Content-Type: application/json;charset=utf-8");
 
     // AppGini application integration
-    $dir = dirname(__FILE__);
-    include "{$dir}/../lib.php";
+    $appGiniPath = $_SERVER['DOCUMENT_ROOT'];
+
+    // Try to find lib.php in the root
+    $possiblePath = glob( "{$appGiniPath}/lib.php" );
+
+    if( !empty($possiblePath) ) {
+        
+        $appGiniPath .= "/lib.php";
+    } else {
+
+        // If nothing is found, search down the folders till the API folder
+        $root = explode( "/", $appGiniPath );
+        $file = explode( "/", str_replace( "\\", "/", __FILE__ ) );
+        
+        // Defines a list of parent folder to search
+        $relPath = array_values( array_diff( $file, $root ) );
+        $lastPathEl = count($relPath) - 1;
+        unset($relPath[$lastPathEl]);
+
+        $found = false;
+        $i = 0;
+
+        while( !$found ) {
+
+            // If all the parent folders' search fails, forcibly breaks the loop
+            if( !array_key_exists($i, $relPath ) ) break;
+
+            $appGiniPath .= "/{$relPath[$i]}";
+
+            $possiblePath = glob( "{$appGiniPath}/lib.php" );
+            
+            // If the lib.php file is found, saves it's path
+            if( !empty($possiblePath) ) {
+                $appGiniPath = $possiblePath[0];
+                $found = true;
+            } else {
+                $i++;
+            }
+        }
+
+        // If the loop was forcibly broken, returns an error
+        if( !$found ){
+            $report = array(
+                "report" => array(
+                    "error" => "AppGini not found. Please, reinstall the API",
+                    "type"  => "appgini-failed"
+                ),
+                "meta" => array(
+                    "remote-ip" => $_SERVER['REMOTE_ADDR'],
+                    "timestamp" => time(),
+                )
+            );
+
+            http_response_code(404);
+
+            exit( json_encode($report, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_NUMERIC_CHECK) );
+        }
+    }
+    
+    include $appGiniPath;
 
     // Auth data
     $token = [

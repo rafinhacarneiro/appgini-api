@@ -24,54 +24,114 @@
         function __construct(){
 
             // AppGini integration
-            include dirname(__FILE__)."/../lib.php";
+            $appGiniPath = $this -> getAppGiniLib();
 
-            // Fetches the Admins' info
-            $sql = "SELECT memberID, passMD5
-                    FROM membership_users
-                    WHERE groupID = 2";
+            // If the AppGini (lib.php) were found, continues
+            if( $appGiniPath ){
 
-            $query = sql($sql, $eo);
-
-            $users = array();
-
-            while($res = db_fetch_assoc($query)){
-                $memberID = strtolower($res["memberID"]);
-                $passMD5 = $res["passMD5"];
-
-                $users[$memberID] = $passMD5;
+                include $appGiniPath;
+    
+                // Fetches the Admins' info
+                $sql = "SELECT memberID, passMD5
+                        FROM membership_users
+                        WHERE groupID = 2";
+    
+                $query = sql($sql, $eo);
+    
+                $users = array();
+    
+                while($res = db_fetch_assoc($query)){
+                    $memberID = strtolower($res["memberID"]);
+                    $passMD5 = $res["passMD5"];
+    
+                    $users[$memberID] = $passMD5;
+                }
+    
+                $this -> tokens = $users;
+    
+                // Fetches an app's database mirror
+                $sql = "SELECT
+                            t.TABLE_NAME AS tbl,
+                            GROUP_CONCAT(DISTINCT REPLACE(c.COLUMN_NAME, '?=', '') SEPARATOR '|') AS cols
+                        FROM INFORMATION_SCHEMA.TABLES t
+                        INNER JOIN INFORMATION_SCHEMA.COLUMNS c
+                            ON c.TABLE_NAME = t.TABLE_NAME
+                        WHERE
+                            t.table_schema = '{$dbDatabase}' AND
+                            c.COLUMN_NAME NOT LIKE 'field%'
+                        GROUP BY t.TABLE_NAME
+                        ORDER BY t.TABLE_NAME ASC";
+    
+                $query = sql($sql, $eo);
+    
+                $tables = array();
+    
+                while($res = db_fetch_assoc($query)){
+                    $res = array_map("mb_strtolower", $res);
+    
+                    $tables[$res["tbl"]] = explode("|", $res["cols"]);
+                }
+    
+                $this -> base = $tables;
+    
+                // Sets meta data to the response
+                $this -> meta = array(
+                    "ip" => $_SERVER['REMOTE_ADDR'],
+                    "timestamp" => date("Y-m-d H:i:s"),
+                );
             }
+        }
 
-            $this -> tokens = $users;
+        function getAppGiniLib(){
 
-            // Fetches an app's database mirror
-            $sql = "SELECT
-                        t.TABLE_NAME AS tbl,
-                        GROUP_CONCAT(DISTINCT REPLACE(c.COLUMN_NAME, '?=', '') SEPARATOR '|') AS cols
-                    FROM INFORMATION_SCHEMA.TABLES t
-                    INNER JOIN INFORMATION_SCHEMA.COLUMNS c
-                        ON c.TABLE_NAME = t.TABLE_NAME
-                    WHERE
-                        t.table_schema = '{$dbDatabase}' AND
-                        c.COLUMN_NAME NOT LIKE 'field%'
-                    GROUP BY t.TABLE_NAME
-                    ORDER BY t.TABLE_NAME ASC";
+            $appGiniPath = $_SERVER['DOCUMENT_ROOT'];
+    
+            // Try to find lib.php in the root
+            $possiblePath = glob( "{$appGiniPath}/lib.php" );
 
-            $query = sql($sql, $eo);
+            if( !empty($possiblePath) ) {
+                
+                return "{$appGiniPath}/lib.php";
+            } else {
 
-            $tables = array();
+                // If nothing is found, search down the folders till the API folder
+                $root = explode( "/", $appGiniPath );
+                $file = explode( "/", str_replace( "\\", "/", __FILE__ ) );
+                
+                // Defines a list of parent folder to search
+                $relPath = array_values( array_diff( $file, $root ) );
+                $lastPathEl = count($relPath) - 1;
+                unset($relPath[$lastPathEl]);
 
-            while($res = db_fetch_assoc($query)){
-                $tables[$res["tbl"]] = explode("|", $res["cols"]);
+                $found = false;
+                $i = 0;
+
+                while( !$found ) {
+
+                    // If all the parent folders' search fails, forcibly breaks the loop
+                    if( !array_key_exists($i, $relPath ) ) break;
+
+                    $appGiniPath .= "/{$relPath[$i]}";
+
+                    $possiblePath = glob( "{$appGiniPath}/lib.php" );
+                    
+                    // If the lib.php file is found, saves it's path
+                    if( !empty($possiblePath) ) {
+                        $appGiniPath = $possiblePath[0];
+                        $found = true;
+                    } else {
+                        $i++;
+                    }
+                }
+
+                // If the loop was forcibly broken, returns an error
+                if( !$found ){
+                    $this -> setError("appgini-failed");
+                    return false;
+                }
+
+                return $appGiniPath;
             }
-
-            $this -> base = $tables;
-
-            // Sets meta data to the response
-            $this -> meta = array(
-                "ip" => $_SERVER['REMOTE_ADDR'],
-                "timestamp" => date("Y-m-d H:i:s"),
-            );
         }
 
         // Prints the JSON reponse
@@ -102,7 +162,6 @@
 
         // Recieves the request data
         function getRequest($request){
-
             // Checks if the parameter is set but empty
             if(isset($request["tb"]) && empty($request["tb"])){
                 $this -> setError("table-null");
@@ -113,6 +172,8 @@
             if(!isset($request["tb"])){
                 $request["tb"] = "all";
             }
+
+            $request["tb"] = trim(mb_strtolower($request["tb"]));
 
             // This parameters can be an array of values
             $params = array("search", "orderBy", "orderDir");
@@ -128,6 +189,8 @@
                     }
                     // Turns POST data single values into an array
                     if(!is_array($request[$param])) $request[$param] = array($request[$param]);
+
+                    $request[$param] = array_map("mb_strtolower", $request[$param]);
                 }
             }
 
@@ -152,7 +215,8 @@
                 "page-failed" => "Page value prohibited",
                 "id-failed" => "ID value prohibited",
                 "where-failed" => "Search operator prohibited",
-                "field-failed" => "Nonexistent field"
+                "field-failed" => "Nonexistent field",
+                "appgini-failed" => "AppGini not found. Please, reinstall the API"
             ];
 
             $this -> report = array("error" => array($type => $errors[$type]));
@@ -160,14 +224,15 @@
 
         // Checks if the informed table is valid
         function validTable(){
-            return array_key_exists(strtolower(trim($this -> request["tb"])), $this -> base);
+            return array_key_exists($this -> request["tb"], $this -> base);
         }
 
         // Checks if the informed table's field is valid
         function validField($field){
             $table = $this -> request["tb"];
+            $field = strtolower(trim($field));
 
-            return (in_array(strtolower(trim($field)), $this -> base[$table]) ? true : false);
+            return in_array($field, $this -> base[$table]);
         }
 
         function query(){
