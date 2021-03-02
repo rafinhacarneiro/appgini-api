@@ -13,12 +13,14 @@
         /* --------------- Common Properties --------------- */
         // Database model
         protected $base = array();
+        protected $user = array();
 
         // Request data
         protected $request = array();
 
         // Response data
         public $report = array();
+        public $extra = array();
         public $meta = array();
 
         /*
@@ -26,7 +28,10 @@
          * Cria os usuários e tokens para a resposta.
          * Resgata as tabelas e campos da base de dados
          */
-        public function __construct($base = null){
+        public function __construct($user, $base = null){
+
+            // Regsta o usuário que realizou a requisição
+            $this -> user = getMemberInfo($user);
             // Resgata qual base de dados a API está usando
             $this -> getBase($base);
         }
@@ -37,9 +42,9 @@
         // @param: $base    String  The database name.
         protected function getBase($base){
             $sql = "SELECT
-                        t.TABLE_NAME AS tbls,
+                        LOWER(t.TABLE_NAME) AS tbls,
                         GROUP_CONCAT(DISTINCT
-                                     REPLACE(c.COLUMN_NAME, '?=', '')
+                                     REPLACE(LOWER(c.COLUMN_NAME), '?=', '')
                                      ORDER BY c.COLUMN_NAME ASC
                                      SEPARATOR '|') AS cols
                     FROM INFORMATION_SCHEMA.TABLES t
@@ -68,7 +73,15 @@
         // @params  $value      Any value.
         // @return  The value with simple quotation marks arround it.
         protected function sqlMap($value){
-            return "'{$value}'";
+
+            if(is_numeric($value)) $value = (is_int($value) ? intval($value) : floatval($value));
+
+            switch(gettype($value)){
+                case "integer": return $value; break;
+                case "double":  return $value; break;
+                case "boolean": return ($value && $value ? 1 : 0); break;
+                default: return (strtolower(trim($value)) == "null" ? "NULL" : "'{$value}'");
+            }
         }
 
         // Defines the response as an error
@@ -185,7 +198,7 @@
         // @params  $table  String  A possible table.
         // @return  true if exists, false if not.
         public function validTable(String $table){
-            $table = strtolower(trim($table));
+            $table = mb_strtolower(trim($table));
             return array_key_exists($table, $this -> base);
         }
 
@@ -194,21 +207,86 @@
         // @params  $field  String  A possible field.
         // @return  true if exists, false if not.
         public function validField(String $table, String $field){
-            $table = strtolower(trim($table));
-            $field = strtolower(trim($field));
+            $table = mb_strtolower(trim($table));
+            $field = mb_strtolower(trim($field));
             return in_array($field, $this -> base[$table]);
+        }
+
+        // Includes the table hooks file
+        public function includeHooksFile($requestMethod, $path = "../../"){
+
+            $type = array(
+                "POST"   => "create",
+                "GET"    => "read",
+                "PATCH"  => "update",
+                "PUT"    => "update",
+                "DELETE" => "delete"
+            );
+
+            $table = $this -> request[$type[$requestMethod]];
+
+            $dir = $path . "hooks";
+
+            $file = "{$dir}/{$table}.php";
+
+            if(file_exists($file)) include $file;
+
+        }
+
+        // Defines the response format
+        public function getFormat(){
+            $format = $this -> request["format"];
+
+            if(!isset($this -> request["format"])) $format = "json";
+
+            return $format;
         }
 
         // Returns an JSON enconded response.
         // @return  String with the response as JSON
         public function toJson(){
+            
+            // Deletes the "extra" propertie if empty
+            if(empty($this -> extra)) unset($this -> extra);
 
-            // Informa os meta dados da consulta
+            // Set metadata of the request
             $this -> meta = array(
                 "remote-ip" => $_SERVER['REMOTE_ADDR'],
                 "timestamp" => time(),
             );
 
+            // Defines a JSON output
+            header("Content-Type: application/json;charset=utf-8");
+
             return json_encode($this, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_NUMERIC_CHECK);
         }
+
+        // Returns an CSV file response.
+        // @return  String with the response as CSV
+        public function toCSV(){
+
+            // Set metadata of the request
+            $time = time();
+            $remote_ip = ip2long($_SERVER['REMOTE_ADDR']);
+
+            // Build the CSV response
+            $first = true;
+            $header = array();
+            $csv = "";
+
+            foreach($this -> report as $row){
+                if($first) $header = array_keys($row);
+
+                $csv .= "\n".implode(";", $row);
+            }
+
+            $csv = implode(";", $header) . $csv;
+
+            // Defines a CSV file output
+            header("Content-type: text/csv;charset=utf-8");
+            header("Content-Disposition: attachment; filename={$remote_ip}.{$time}.csv");
+            
+            return $csv;
+        }
+
     }

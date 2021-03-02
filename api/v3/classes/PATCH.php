@@ -73,10 +73,28 @@
 
         // Updates data from the informed table
         private function update(){
-            $table = strtolower(trim($this -> request["update"]));
+            $table = mb_strtolower(trim($this -> request["update"]));
             $pkField = getPKFieldName($table);
             $id = $this -> sqlMap($this -> request["id"]);
 
+            // Old values
+            $fields = implode(", ", $this -> base[$table]);
+            $query = sql("SELECT {$fields} FROM {$table} WHERE {$pkField} = {$id}", $eo);
+            $old = db_fetch_assoc($query);
+
+            $this -> request["info"] = array_merge($old, $this -> request["info"]);
+
+            // Hook - Before update
+            $hook = "{$table}_before_update";
+            $args = array();
+
+            $this -> request["info"]["selectedID"] = $id;
+            
+            if(function_exists($hook)) $hook($this -> request["info"], $this -> user, $args);
+
+            unset($this -> request["info"]["selectedID"]);
+
+            // Update
             $set = array();
 
             foreach($this -> request["info"] as $field => $value){
@@ -98,6 +116,13 @@
 
                     return false;
                 }
+
+                // Hook - After update
+                $hook = "{$table}_after_update";
+
+                $this -> request["info"]["selectedID"] = $id;
+                
+                if(function_exists($hook)) $hook($this -> request["info"], $this -> user, $args);
 
                 $this -> report = [
                     "success" => true,

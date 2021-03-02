@@ -14,6 +14,10 @@
 
     // Defines a JSON UTF-8 response
     header("Content-Type: application/json;charset=utf-8");
+    header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+    header("Cache-Control: post-check=0, pre-check=0", false);
+    header("Pragma: no-cache");
+    header("Expires: 0");
 
     // AppGini application integration
     $appGiniPath = $_SERVER['DOCUMENT_ROOT'];
@@ -22,7 +26,7 @@
     $possiblePath = glob( "{$appGiniPath}/lib.php" );
 
     if( !empty($possiblePath) ) {
-        
+        $rootFolder = $appGiniPath ."/";
         $appGiniPath .= "/lib.php";
     } else {
 
@@ -49,6 +53,7 @@
             
             // If the lib.php file is found, saves it's path
             if( !empty($possiblePath) ) {
+                $rootFolder = $appGiniPath ."/";
                 $appGiniPath = $possiblePath[0];
                 $found = true;
             } else {

@@ -53,10 +53,11 @@
 
         // Called to create the data
         public function POST(){
-            $table = strtolower(trim($this -> request["create"]));
+            $table = mb_strtolower(trim($this -> request["create"]));
 
             // If the informed data already exists, informs the ID of the row
             $exists = $this -> read(3);
+
             if($exists){
                 $this -> report = [
                     "success" => true,
@@ -68,6 +69,13 @@
                 return true;
             }
 
+            // Hook - Before insert
+            $hook = "{$table}_before_insert";
+            $args = array();
+            
+            if(function_exists($hook)) $hook($this -> request["info"], $this -> user, $args);
+
+            // Insert
             $fields = array_keys($this -> request["info"]);
             $values = array_map(array($this, "sqlMap"), $this -> request["info"]);
 
@@ -88,6 +96,13 @@
                     return false;
                 }
 
+                // Hook - After insert
+                $hook = "{$table}_after_insert";
+
+                $this -> request["info"]["selectedID"] = $created;
+                
+                if(function_exists($hook)) $hook($this -> request["info"], $this -> user, $args);
+                
                 $this -> report = [
                     "success" => true,
                     "createdID" => $created
