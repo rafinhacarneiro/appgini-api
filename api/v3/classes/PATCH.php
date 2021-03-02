@@ -73,7 +73,7 @@
 
         // Updates data from the informed table
         private function update(){
-            $table = strtolower(trim($this -> request["update"]));
+            $table = mb_strtolower(trim($this -> request["update"]));
             $pkField = getPKFieldName($table);
             $id = $this -> sqlMap($this -> request["id"]);
 

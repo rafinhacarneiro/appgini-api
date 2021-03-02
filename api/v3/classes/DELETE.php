@@ -60,7 +60,7 @@
         // Delete data from informed table
         private function del(){
 
-            $table = strtolower(trim($this -> request["delete"]));
+            $table = mb_strtolower(trim($this -> request["delete"]));
             $pkField = getPKFieldName($table);
             $id = $this -> sqlMap($this -> request["id"]);
 

@@ -53,7 +53,7 @@
 
         // Called to create the data
         public function POST(){
-            $table = strtolower(trim($this -> request["create"]));
+            $table = mb_strtolower(trim($this -> request["create"]));
 
             // If the informed data already exists, informs the ID of the row
             $exists = $this -> read(3);

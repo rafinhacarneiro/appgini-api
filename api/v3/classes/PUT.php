@@ -75,7 +75,7 @@
         // Creates a new row
         private function create(){
 
-            $table = strtolower(trim($this -> request["update"]));
+            $table = mb_strtolower(trim($this -> request["update"]));
 
             $fields = array_keys($this -> request["info"]);
             $values = array_map(array($this, "sqlMap"), $this -> request["info"]);
@@ -118,7 +118,7 @@
 
         // Updates data from the informed table
         private function update(){
-            $table = strtolower(trim($this -> request["update"]));
+            $table = mb_strtolower(trim($this -> request["update"]));
             $pkField = getPKFieldName($table);
             $id = $this -> sqlMap($this -> request["id"]);
 

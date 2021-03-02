@@ -37,9 +37,9 @@
         // @param: $base    String  The database name.
         protected function getBase($base){
             $sql = "SELECT
-                        t.TABLE_NAME AS tbls,
+                        LOWER(t.TABLE_NAME) AS tbls,
                         GROUP_CONCAT(DISTINCT
-                                     REPLACE(c.COLUMN_NAME, '?=', '')
+                                     REPLACE(LOWER(c.COLUMN_NAME), '?=', '')
                                      ORDER BY c.COLUMN_NAME ASC
                                      SEPARATOR '|') AS cols
                     FROM INFORMATION_SCHEMA.TABLES t
@@ -185,7 +185,7 @@
         // @params  $table  String  A possible table.
         // @return  true if exists, false if not.
         public function validTable(String $table){
-            $table = strtolower(trim($table));
+            $table = mb_strtolower(trim($table));
             return array_key_exists($table, $this -> base);
         }
 
@@ -194,8 +194,8 @@
         // @params  $field  String  A possible field.
         // @return  true if exists, false if not.
         public function validField(String $table, String $field){
-            $table = strtolower(trim($table));
-            $field = strtolower(trim($field));
+            $table = mb_strtolower(trim($table));
+            $field = mb_strtolower(trim($field));
             return in_array($field, $this -> base[$table]);
         }
 

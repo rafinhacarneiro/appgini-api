@@ -51,7 +51,7 @@
         // Called to get the data
         public function GET(){
 
-            $table = strtolower(trim($this -> request["read"]));
+            $table = mb_strtolower(trim($this -> request["read"]));
 
             $sqlFields = (get_sql_fields($table) ? get_sql_fields($table) : "*");
             $sqlFrom = (get_sql_from($table, true) ? get_sql_from($table, true) : $table);
@@ -120,7 +120,7 @@
 
                     // Checks for valid order directions
                     foreach($this -> request["orderDir"] as $orderDir){
-                        $orderDir = strtolower(trim($orderDir));
+                        $orderDir = mb_strtolower(trim($orderDir));
 
                         if(!in_array($orderDir, array("asc", "desc"))){
                             $this -> setError("orderDir-failed");
@@ -179,7 +179,7 @@
                         $sqlLimit = " LIMIT {$limit} OFFSET {$offset}";
 
                     // Else, checks if it's query for all the data
-                    } else if(strtolower(trim($this -> request["limit"])) == "all"){
+                    } else if(mb_strtolower(trim($this -> request["limit"])) == "all"){
                         $sqlLimit = "";
                     // Else, informs an error.
                     } else{
@@ -228,7 +228,7 @@
         private function search($searched){
             $sqlWhere = "";
 
-            $table = strtolower(trim($this -> request["read"]));
+            $table = mb_strtolower(trim($this -> request["read"]));
 
             foreach($searched as $count => $search){
                 $search = urldecode($search);
@@ -237,7 +237,7 @@
 
                 list($full, $field, $op, $value) = $matches;
 
-                $field = makeSafe(trim(strtolower($field)));
+                $field = makeSafe(trim(mb_strtolower($field)));
 
                 // If the field isn't valid, informs an error
                 if(!$this -> validField($table, $field)){
@@ -289,7 +289,7 @@
 
         // Returns the order fields for a query
         private function orderBy($orders){
-            $table = strtolower(trim($this -> request["read"]));
+            $table = mb_strtolower(trim($this -> request["read"]));
             foreach($orders as $i => $orderBy){
                 
                 // If the field isn't valid, informs an error
