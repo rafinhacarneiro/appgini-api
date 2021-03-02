@@ -77,6 +77,13 @@
             $pkField = getPKFieldName($table);
             $id = $this -> sqlMap($this -> request["id"]);
 
+            // Old values
+            $fields = implode(", ", $this -> base[$table]);
+            $query = sql("SELECT {$fields} FROM {$table} WHERE {$pkField} = {$id}", $eo);
+            $old = db_fetch_assoc($query);
+
+            $this -> request["info"] = array_merge($old, $this -> request["info"]);
+
             // Hook - Before update
             $hook = "{$table}_before_update";
             $args = array();

@@ -28,6 +28,18 @@
             if(!isset($request["read"])) $request["read"] = "all";
             $request["read"] = trim(mb_strtolower($request["read"]));
 
+            // Response format
+            if(isset($request["format"])){
+                $request["format"] = strtolower(trim($request["format"]));
+
+                if(!in_array($request["format"], array("json", "csv"))){
+                    $this -> setError("format-inexistent");
+                    return false;
+                }
+            } else {
+                $request["format"] = "json";
+            }
+
             // Parameters that can be an array
             $params = array("search", "orderBy", "orderDir");
 
@@ -216,6 +228,11 @@
 
                 if(!$hasRegs) $this -> setError("reg-null");
 
+                // Hook
+                $hook = "{$table}_get";
+
+                if(function_exists($hook)) $hook($this -> report, $this -> extra, $this -> user);
+                
             // Else, informs an error
             } else{
                 $this -> setError("table-failed");

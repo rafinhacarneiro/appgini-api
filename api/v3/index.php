@@ -42,12 +42,22 @@
         }
     
         $class = "v3\\classes\\{$requestMethod}";
-        
-        $api = new $class($dbDatabase);
+
+        $api = new $class($token["user"], $dbDatabase);
     
-        if(@$api -> getRequest($data)) $api -> $requestMethod();
+        if(@$api -> getRequest($data)){
+            // Arquivo de hooks da tabela
+            $api -> includeHooksFile($requestMethod, $rootFolder);
+
+            $api -> $requestMethod();
+        }
     
-        if($api) echo $api -> toJson();
+        if($api){
+
+            $response = ($api -> getFormat() == "json"? "toJson" : "toCSV");
+
+            echo $api -> $response();
+        }
     }
 
 ?>
