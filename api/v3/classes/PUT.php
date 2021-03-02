@@ -77,6 +77,12 @@
 
             $table = mb_strtolower(trim($this -> request["update"]));
 
+            // Hook - Before insert
+            $hook = "{$table}_before_insert";
+            $args = array();
+                
+            if(function_exists($hook)) $hook($this -> request["info"], $this -> user, $args);
+            
             $fields = array_keys($this -> request["info"]);
             $values = array_map(array($this, "sqlMap"), $this -> request["info"]);
 
@@ -96,6 +102,13 @@
 
                     return false;
                 }
+
+                // Hook - After insert
+                $hook = "{$table}_after_insert";
+
+                $this -> request["info"]["selectedID"] = $created;
+                
+                if(function_exists($hook)) $hook($this -> request["info"], $this -> user, $args);
 
                 http_response_code(201);
 
@@ -122,6 +135,17 @@
             $pkField = getPKFieldName($table);
             $id = $this -> sqlMap($this -> request["id"]);
 
+            // Hook - Before update
+            $hook = "{$table}_before_update";
+            $args = array();
+
+            $this -> request["info"]["selectedID"] = $id;
+            
+            if(function_exists($hook)) $hook($this -> request["info"], $this -> user, $args);
+
+            unset($this -> request["info"]["selectedID"]);
+
+            // Update
             $set = array();
 
             foreach($this -> request["info"] as $field => $value){
@@ -143,6 +167,13 @@
 
                     return false;
                 }
+
+                // Hook - After update
+                $hook = "{$table}_after_update";
+                
+                $this -> request["info"]["selectedID"] = $id;
+                
+                if(function_exists($hook)) $hook($this -> request["info"], $this -> user, $args);
 
                 $this -> report = [
                     "success" => true,

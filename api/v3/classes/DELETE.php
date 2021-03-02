@@ -64,6 +64,14 @@
             $pkField = getPKFieldName($table);
             $id = $this -> sqlMap($this -> request["id"]);
 
+            // Hook - Before delete
+            $hook = "{$table}_before_delete";
+            $args = array();
+            $skip = false;
+
+            if(function_exists($hook)) $hook($id, $skip, $this -> user, $args);
+
+            // Delete
             $sql = "DELETE FROM {$table} WHERE {$pkField} = {$id}";
 
             try {
@@ -78,6 +86,11 @@
                     return false;
                 }
 
+                // Hook - After delete
+                $hook = "{$table}_after_delete";
+
+                if(function_exists($hook)) $hook($id, $this -> user, $args);
+                
                 $this -> report = [
                     "success" => true
                 ];

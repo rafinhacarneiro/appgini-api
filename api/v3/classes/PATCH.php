@@ -77,6 +77,17 @@
             $pkField = getPKFieldName($table);
             $id = $this -> sqlMap($this -> request["id"]);
 
+            // Hook - Before update
+            $hook = "{$table}_before_update";
+            $args = array();
+
+            $this -> request["info"]["selectedID"] = $id;
+            
+            if(function_exists($hook)) $hook($this -> request["info"], $this -> user, $args);
+
+            unset($this -> request["info"]["selectedID"]);
+
+            // Update
             $set = array();
 
             foreach($this -> request["info"] as $field => $value){
@@ -98,6 +109,13 @@
 
                     return false;
                 }
+
+                // Hook - After update
+                $hook = "{$table}_after_update";
+
+                $this -> request["info"]["selectedID"] = $id;
+                
+                if(function_exists($hook)) $hook($this -> request["info"], $this -> user, $args);
 
                 $this -> report = [
                     "success" => true,
