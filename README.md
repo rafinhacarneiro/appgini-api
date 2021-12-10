@@ -1,4 +1,4 @@
-# AppGini API
+# AppGini API [DEPRECATED]
 This is an API based on CRUD operations with Basic authentication. It uses most of AppGini functions and works with any AppGini's generated applications. It provides ```GET```, ```POST```, ```PUT```, ```PATCH``` and ```DELETE``` support and all responses are in JSON format. Only Admin users can use this API.
 
 The _v2_ was first designed to integrate AppGini with Microsoft's Power BI, so its function is READ-only with ```GET```/```POST``` suport. The _v3_ its a full CRUD API. Custom operations are coming soon.
